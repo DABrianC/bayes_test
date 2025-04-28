@@ -15,7 +15,7 @@
 # random noise that I added to make this work.
 
 # If I attempt to use a package that calls stan, this does not
-# work. It always runs into an error while compling.
+# work. It always runs into an error while compiling.
 
 
 # Here it is!
