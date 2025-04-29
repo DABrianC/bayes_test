@@ -146,7 +146,7 @@ get_beta_params <- function(scaled_agreement, confidence) {
   # Base concentration (higher values = more certainty)
   base_concentration <- alpha_estimate + beta_estimate
   
-  exponent <- 2
+  exponent <-2
   # Scale concentration by confidence
   scaled_conf <- pmax(confidence/100, 0.1) # Set a floor at 0.1
   adjusted_concentration <- base_concentration * scaled_conf^exponent
