@@ -148,14 +148,10 @@ get_beta_params <- function(scaled_agreement, confidence) {
   
   exponent <- 2
   # Scale concentration by confidence
-  # usually you add some hyperparameter here instead of hard
-  # coding .2. I could use one of Rs set up distributions like pmax or something
-  scaled_conf <- pmax(round1_df$confidence, 0.1) # set a floor at .01
+  scaled_conf <- pmax(confidence/100, 0.1) # Set a floor at 0.1
   adjusted_concentration <- base_concentration * scaled_conf^exponent
-  
-  #adjusted_concentration <- base_concentration * (confidence + 0.2)
-  
-  # Maintain same mean but adjust concentration
+
+    # Maintain same mean but adjust concentration
   alpha_adj <- scaled_agreement * adjusted_concentration
   beta_adj <- (1 - scaled_agreement) * adjusted_concentration
   
