@@ -109,7 +109,7 @@ all_densities <- c(list(group_density_plot), individual_density_plots())
 grid.arrange(grobs = all_densities, ncol = 3)
 
 # Create summary statistics to share with respondents
-round1_summary <- round1_data %>%
+round1_summary <- round1_df %>%
   summarise(
     mean_agreement = weighted.mean(agreement, confidence),
     weighted_sd = sqrt(sum(confidence * (agreement - mean_agreement)^2) / sum(confidence)),
@@ -119,7 +119,7 @@ round1_summary <- round1_data %>%
   )
 
 # Generate visualization for respondents to review
-review_plot <- ggplot(round1_data, aes(x = agreement, y = confidence/100)) +
+review_plot <- ggplot(round1_df, aes(x = agreement, y = confidence/100)) +
   geom_point(size = 3, alpha = 0.7) +
   geom_vline(xintercept = round1_summary$mean_agreement, color = "blue", linetype = "dashed") +
   labs(title = "Round 1 Responses",
@@ -131,7 +131,7 @@ review_plot <- ggplot(round1_data, aes(x = agreement, y = confidence/100)) +
 review_plot
 
 # Rescale data
-scaled_agreements <- round1_data$agreement / 5
+scaled_agreements <- round1_df$agreement / 5
 
 # Estimate Beta parameters from data (method of moments)
 mean_scaled <- mean(scaled_agreements, na.rm = TRUE)
@@ -146,8 +146,14 @@ get_beta_params <- function(scaled_agreement, confidence) {
   # Base concentration (higher values = more certainty)
   base_concentration <- alpha_estimate + beta_estimate
   
+  exponent <- 2
   # Scale concentration by confidence
-  adjusted_concentration <- base_concentration * (confidence/100 + 0.2)
+  # usually you add some hyperparameter here instead of hard
+  # coding .2. I could use one of Rs set up distributions like pmax or something
+  scaled_conf <- pmax(round1_df$confidence, 0.1) # set a floor at .01
+  adjusted_concentration <- base_concentration * scaled_conf^exponent
+  
+  #adjusted_concentration <- base_concentration * (confidence + 0.2)
   
   # Maintain same mean but adjust concentration
   alpha_adj <- scaled_agreement * adjusted_concentration
@@ -160,13 +166,13 @@ get_beta_params <- function(scaled_agreement, confidence) {
 x_seq <- seq(0, 1, length.out = 100)
 plot_data <- data.frame()
 
-for(i in 1:nrow(round1_data)) {
-  params <- get_beta_params(scaled_agreements[i], round1_data$confidence[i])
+for(i in 1:nrow(round1_df)) {
+  params <- get_beta_params(scaled_agreements[i], round1_df$confidence[i])
   
   temp_data <- data.frame(
     x = x_seq,
     density = dbeta(x_seq, params$alpha, params$beta),
-    respondent = round1_data$respondent_id[i]
+    respondent = round1_df$respondent_id[i]
   )
   
   plot_data <- rbind(plot_data, temp_data)
@@ -200,6 +206,7 @@ ggplot(plot_data, aes(x = x*5, y = density, color = factor(respondent))) +
 
 # Add some noise scaled by inverse of confidence
 # Higher confidence = less spread
+# this is where building in mcmc could help to not introduce noise
 #   noise_sd <- 0.5 * (1 - ind_data$confidence) + 0.1
 #   density_df$agreement <- density_df$agreement + rnorm(nrow(density_df), 0, noise_sd)
 
