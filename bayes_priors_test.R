@@ -65,7 +65,7 @@ add_individual_to_group <- function(plot, individual_id) {
 
 # Example: Generate plot for individual #3 compared to group
 individual3_vs_group <- add_individual_to_group(group_density_plot, 3)
-
+individual7_vs_group <- add_individual_to_group(group_density_plot, 7)
 
 # Create individual density plots 
 # using confidence as kernel bandwidth modifier
@@ -148,7 +148,7 @@ get_beta_params <- function(scaled_agreement, confidence) {
   
   exponent <-2
   # Scale concentration by confidence
-  scaled_conf <- pmax(confidence/100, 0.1) # Set a floor at 0.1
+  scaled_conf <- pmax(confidence, 0.1) # Set a floor at 0.1
   adjusted_concentration <- base_concentration * scaled_conf^exponent
 
     # Maintain same mean but adjust concentration
@@ -181,51 +181,70 @@ ggplot(plot_data, aes(x = x*5, y = density, color = factor(respondent))) +
        y = "Density") +
   theme_minimal()
 
+# Visualize overall beta distribution
+x_seq <- seq(0, 1, length.out = 100)
+plot_data_all <- data.frame()
 
+params <- get_beta_params(scaled_agreements, round1_df$confidence)
+
+   data <- data.frame(
+     x = x_seq
+     , density = dbeta(x_seq, params$alpha, params$beta)
+     , respondent = round1_df$respondent_id
+   )
+   
+plot_data_all <- rbind(plot_data_all, data)   
+
+ggplot(plot_data, aes(x = x*5, y = density), color = "lightblue") +
+  geom_line() +
+  labs(title = "Beta Distribution (Scaled by Confidence)",
+       x = "Agreement Rating (0-5)",
+       y = "Density") +
+  theme_minimal()
 ### To swap out the geom_line for geom_density in the 
 # individual_density_plots function use this code
 
 ## Function to create individual density with confidence weighting
-#individual_density_plots <- function() {
-#  plots_list <- list()
+individual_density_plots <- function() {
+  plots_list <- list()
 
-#  for (id in 1:12) {
+  for (id in 1:12) {
 # Extract individual data
-#   ind_data <- round1_df %>% filter(respondent_id == id)
+   ind_data <- round1_df %>% filter(respondent_id == id)
 
 # Create a data frame with replicated values to influence the density
 # Number of replications based on confidence (higher confidence = more weight)
-#   n_reps <- round(100 * ind_data$confidence)
-#   density_df <- data.frame(
-#     agreement = rep(ind_data$agreement, max(n_reps, 10))
-#   )
+   n_reps <- round(100 * ind_data$confidence)
+   density_df <- data.frame(
+     agreement = rep(ind_data$agreement, max(n_reps, 10))
+   )
 
 # Add some noise scaled by inverse of confidence
 # Higher confidence = less spread
-# this is where building in mcmc could help to not introduce noise
-#   noise_sd <- 0.5 * (1 - ind_data$confidence) + 0.1
-#   density_df$agreement <- density_df$agreement + rnorm(nrow(density_df), 0, noise_sd)
+# this is where building in mcmc could help to not introduce error
+   noise_sd <- 0.5 * (1 - ind_data$confidence) + 0.1
+   density_df$agreement <- density_df$agreement + rnorm(nrow(density_df), 0, noise_sd)
 
 # Create plot
-#  ind_plot <- ggplot(density_df, aes(x = agreement)) +
-#    geom_density(fill = "blue", alpha = 0.3) + 
-#    geom_vline(xintercept = round1_df$agreement, color = "lightgrey") +
-#    geom_vline(xintercept = ind_data$agreement, color = "red") +
-#    labs(title = paste("Respondent", id),
-#         x = "Agreement Rating",
-#        y = "Density") +
-#    xlim(0, 5) +  # Keep consistent x-axis range
-#   theme_minimal()
+  ind_plot <- ggplot(density_df, aes(x = agreement)) +
+    geom_density(fill = "blue", alpha = 0.3) + 
+    geom_vline(xintercept = round1_df$agreement, color = "lightgrey") +
+    geom_vline(xintercept = ind_data$agreement, color = "red") +
+    labs(title = paste("Respondent", id),
+         x = "Agreement Rating",
+        y = "Density") +
+   xlim(0, 5) +  # Keep consistent x-axis range
+   theme_minimal()
 
-#  plots_list[[id]] <- ind_plot
-# }
+  plots_list[[id]] <- ind_plot
+ }
 
-# return(plots_list)
-#}
+ return(plots_list)
+}
 
 # Combine all individual plots with the group average
-#library(gridExtra)
+library(gridExtra)
 
-#all_densities <- c(list(group_density_plot), individual_density_plots())
+all_densities <- c(list(group_density_plot), individual_density_plots())
 
-#grid.arrange(grobs = all_densities, ncol = 3)
+grid.arrange(grobs = all_densities, ncol = 3)
