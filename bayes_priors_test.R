@@ -36,6 +36,13 @@ round1_df <- data.frame(
   confidence = c(.45, .55, .73, .89, .35, .22, .91, .15, .95, 1, .58, .39)      # Confidence levels (0-100)
 )
 
+# testing out dnorm 
+
+test <- dnorm(mean(round1_df$agreement)
+              , sd = sd(round1_df$agreement))
+
+hist(test)
+
 # Convert prior beliefs to beta distribution parameters
 # First scale agreement to 0-1
 #round1_df$agree_scaled <- round1_df$agree/5
@@ -88,6 +95,7 @@ individual_density_plots <- function() {
     # Create plot
     ind_plot <- ggplot() +
       geom_line(aes(x = x_values, y = density_values), color = "blue") + 
+      geom_line(aes(x = round1_df$agreement, y = density_values), color = "red") +
       geom_vline(xintercept = round1_df$agreement, color = "lightgrey") +
       geom_vline(xintercept = ind_data$agreement, color = "red") +
       labs(title = paste("Respondent", id),
@@ -130,6 +138,7 @@ review_plot <- ggplot(round1_df, aes(x = agreement, y = confidence/100)) +
 
 review_plot
 
+
 # Rescale data
 scaled_agreements <- round1_df$agreement / 5
 
@@ -146,7 +155,7 @@ get_beta_params <- function(scaled_agreement, confidence) {
   # Base concentration (higher values = more certainty)
   base_concentration <- alpha_estimate + beta_estimate
   
-  exponent <-2
+  exponent <-.5
   # Scale concentration by confidence
   scaled_conf <- pmax(confidence, 0.1) # Set a floor at 0.1
   adjusted_concentration <- base_concentration * scaled_conf^exponent
@@ -159,7 +168,7 @@ get_beta_params <- function(scaled_agreement, confidence) {
 }
 
 # Visualize individual distributions
-x_seq <- seq(0, 1, length.out = 100)
+x_seq <- seq(.01, 1, length.out = 100)
 plot_data <- data.frame()
 
 for(i in 1:nrow(round1_df)) {
